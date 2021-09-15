@@ -3,6 +3,7 @@ using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -21,7 +22,16 @@ namespace CosmosDbSdk
                 await InitDatabaseAndContainerIfNotExists(client);
                 await QueryForDocumentsWithoutLinqAsync(client);
                 await QueryForDocumentsWithLinqAsync(client);
-            
+                await ReplacingDocumentsAsync(client);
+
+            Console.WriteLine("Restart the execution? (y/n)");
+            if (Console.ReadLine() == "y")
+            {
+                string strCmdText;
+                strCmdText = "/C dotnet CosmosDbSdk.dll";
+                Process.Start("CMD.exe", strCmdText);
+            }
+
         }
 
         private static async Task QueryForDocumentsWithoutLinqAsync(CosmosClient client)
@@ -33,7 +43,7 @@ namespace CosmosDbSdk
             var page = await iterator.ReadNextAsync();
             foreach(var doc in page)
             {
-                Console.WriteLine("Document: " + doc.Name + ", id:" + doc.Id);
+                Console.WriteLine("Document: " + doc.Name + ", id:" + doc.Id + doc.Id + ", count: " + doc.Count);
             }
         }
 
@@ -50,7 +60,7 @@ namespace CosmosDbSdk
             {
                 foreach (var doc in await iterator.ReadNextAsync())
                 {
-                    Console.WriteLine("Document: " + doc.Name + ", id:" + doc.Id);
+                    Console.WriteLine("Document: " + doc.Name + ", id:" + doc.Id + ", count: " + doc.Count);
                 }
             }
 
@@ -82,6 +92,26 @@ namespace CosmosDbSdk
                 {
                     var request = await containerCreation.Container.CreateItemAsync<Item>(item);
                     Console.WriteLine(request.StatusCode);
+                }
+            }
+        }
+
+        private static async Task ReplacingDocumentsAsync(CosmosClient client)
+        {
+            var container = client.GetContainer("CosmosDb", "ItemsContainer");
+            Console.WriteLine();
+            Console.WriteLine("Incrementing documents count by replacing them...");
+
+            var iterator = container.GetItemLinqQueryable<Item>()
+                .ToFeedIterator();
+
+            while (iterator.HasMoreResults)
+            {
+                foreach (var doc in await iterator.ReadNextAsync())
+                {
+                    doc.Count++;
+
+                    await container.ReplaceItemAsync<Item>(doc, doc.Id.ToString());
                 }
             }
         }
