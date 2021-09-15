@@ -1,7 +1,9 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -13,15 +15,16 @@ namespace CosmosDbSdk
         static async Task Main(string[] args)
         {
             var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-            using (var client = new CosmosClient(configuration["Cosmos:Endpoint"], configuration["Cosmos:MasterKey"]))
-            {
+            var client = new CosmosClient(configuration["Cosmos:Endpoint"], configuration["Cosmos:MasterKey"]);
+
+
                 await InitDatabaseAndContainerIfNotExists(client);
-                await QueryForDocumentsAsync(client);
-            }
+                await QueryForDocumentsWithoutLinqAsync(client);
+                await QueryForDocumentsWithLinqAsync(client);
             
         }
 
-        private static async Task QueryForDocumentsAsync(CosmosClient client)
+        private static async Task QueryForDocumentsWithoutLinqAsync(CosmosClient client)
         {
             var container = client.GetContainer("CosmosDb", "ItemsContainer");
             Console.WriteLine("Getting all documents from the container...");
@@ -34,6 +37,25 @@ namespace CosmosDbSdk
             }
         }
 
+        private static async Task QueryForDocumentsWithLinqAsync(CosmosClient client)
+        {
+            var container = client.GetContainer("CosmosDb", "ItemsContainer");
+            Console.WriteLine("Getting documents from the container where count > 18 using linq...");
+
+            var iterator = container.GetItemLinqQueryable<Item>()
+                .Where(i => i.Count > 18)
+                .ToFeedIterator();
+
+            while(iterator.HasMoreResults)
+            {
+                foreach (var doc in await iterator.ReadNextAsync())
+                {
+                    Console.WriteLine("Document: " + doc.Name + ", id:" + doc.Id);
+                }
+            }
+
+        }
+
         private static async Task InitDatabaseAndContainerIfNotExists(CosmosClient client)
         {
             var databaseResponse = await client.CreateDatabaseIfNotExistsAsync("CosmosDb");
@@ -44,7 +66,7 @@ namespace CosmosDbSdk
 
             Console.WriteLine("Container creation status: " + containerCreation.StatusCode);
 
-            if (containerCreation.StatusCode == HttpStatusCode.OK)
+            if (containerCreation.StatusCode == HttpStatusCode.Created)
             {
                 var documents = new List<Item>()
             {
