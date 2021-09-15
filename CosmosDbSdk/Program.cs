@@ -30,7 +30,7 @@ namespace CosmosDbSdk
             var page = await iterator.ReadNextAsync();
             foreach(var doc in page)
             {
-                Console.WriteLine("Document: " + doc.Name + ", id:" + doc.id);
+                Console.WriteLine("Document: " + doc.Name + ", id:" + doc.Id);
             }
         }
 
@@ -44,15 +44,15 @@ namespace CosmosDbSdk
 
             Console.WriteLine("Container creation status: " + containerCreation.StatusCode);
 
-            if (containerCreation.StatusCode == HttpStatusCode.Created)
+            if (containerCreation.StatusCode == HttpStatusCode.OK)
             {
                 var documents = new List<Item>()
             {
-                new Item(){id = Guid.NewGuid(), Name = "Document item 1", Count = 5},
-                new Item(){id = Guid.NewGuid(), Name = "Document item 2", Count = 9},
-                new Item(){id = Guid.NewGuid(), Name = "Document item 3", Count = 19},
-                new Item(){id = Guid.NewGuid(), Name = "Document item 4", Count = 51},
-                new Item(){id = Guid.NewGuid(), Name = "Document item 5", Count = -100},
+                new Item(){Id = Guid.NewGuid(), Name = "Document item 1", Count = 5},
+                new Item(){Id = Guid.NewGuid(), Name = "Document item 2", Count = 9},
+                new Item(){Id = Guid.NewGuid(), Name = "Document item 3", Count = 19},
+                new Item(){Id = Guid.NewGuid(), Name = "Document item 4", Count = 51},
+                new Item(){Id = Guid.NewGuid(), Name = "Document item 5", Count = -100},
             };
                 Console.WriteLine("Uploading documents...");
 
